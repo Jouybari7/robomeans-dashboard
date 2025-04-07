@@ -2,7 +2,7 @@ import React from "react";
 
 
 function VideoStream({ robotId }) {
-  const streamUrl = `http://your-streaming-server.com/stream/${robotId}`; // Replace this with your real video source
+  const streamUrl = `https://your-streaming-server.com/stream/${robotId}`; // Replace this with your real video source
 
   return (
     <div style={{ marginTop: 20 }}>

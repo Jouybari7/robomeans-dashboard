@@ -19,3 +19,4 @@ export const connectMQTT = async () => {
 
   return client;
 };
+export default Dashboard;

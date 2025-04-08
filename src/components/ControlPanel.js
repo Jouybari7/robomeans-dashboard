@@ -1,24 +1,27 @@
 import React from 'react';
-import { connectMQTT } from '../aws/connectMQTT';
+import axios from 'axios';
 
-function ControlPanel({ robotId }) {
-  const sendMQTTCommand = async (action) => {
-    const client = await connectMQTT();
-    const topic = `robot/${robotId}/cmd`;
-    const payload = JSON.stringify({ action });
-
-    client.publish(topic, payload);
-    alert(`MQTT "${action}" sent to ${robotId}`);
+const ControlPanel = ({ robotId }) => {
+  const sendCommand = async (action) => {
+    const url = `https://18.220.132.145/api/${robotId}/${action}`;
+    try {
+      const response = await axios.post(url);
+      alert(`${action} sent to ${robotId}`);
+      console.log(response.data);
+    } catch (err) {
+      alert(`Failed to send ${action}: ${err.message}`);
+    }
   };
 
   return (
-    <div>
-      <button onClick={() => sendMQTTCommand("start")}>Start</button>
-      <button onClick={() => sendMQTTCommand("navigate")}>Navigate</button>
-      <button onClick={() => sendMQTTCommand("dock")}>Dock</button>
-      <button onClick={() => sendMQTTCommand("undock")}>Undock</button>
+    <div style={{ marginTop: 30 }}>
+      <h4>Robot Controls</h4>
+      <button onClick={() => sendCommand('start')}>Start</button>
+      <button onClick={() => sendCommand('navigate')}>Navigate</button>
+      <button onClick={() => sendCommand('dock')}>Dock</button>
+      <button onClick={() => sendCommand('undock')}>Undock</button>
     </div>
   );
-}
+};
 
 export default ControlPanel;

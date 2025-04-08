@@ -1,21 +1,23 @@
-import React, { useEffect } from 'react';
-import mqtt from 'mqtt';
-import { Auth } from 'aws-amplify';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Auth } from 'aws-amplify';
+import mqtt from 'mqtt';
 
-const region = 'us-east-2';
+const region = 'us-east-2'; // Your region
 const iotEndpoint = 'wss://a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com/mqtt';
 
 const Dashboard = () => {
   const { robotId } = useParams();
+  const [status, setStatus] = useState('Disconnected');
+  const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const connectMQTT = async () => {
+    const connectToMQTT = async () => {
       try {
         const credentials = await Auth.currentCredentials();
         const { accessKeyId, secretAccessKey, sessionToken } = credentials;
 
-        const client = mqtt.connect(iotEndpoint, {
+        const mqttClient = mqtt.connect(iotEndpoint, {
           protocol: 'wss',
           accessKeyId,
           secretKey: secretAccessKey,
@@ -24,26 +26,52 @@ const Dashboard = () => {
           reconnectPeriod: 1000,
         });
 
-        client.on('connect', () => {
-          console.log('✅ MQTT Connected');
-          client.subscribe(`robot/${robotId}/status`);
+        mqttClient.on('connect', () => {
+          console.log('✅ Connected to AWS IoT');
+          setStatus('Connected');
+          mqttClient.subscribe(`robot/${robotId}/status`);
         });
 
-        client.on('message', (topic, message) => {
+        mqttClient.on('message', (topic, message) => {
           console.log(`📩 Message on ${topic}: ${message.toString()}`);
+          setStatus(message.toString());
         });
+
+        mqttClient.on('error', (err) => {
+          console.error('MQTT error:', err);
+          setStatus('Connection error');
+        });
+
+        setClient(mqttClient);
       } catch (err) {
         console.error('MQTT connection error:', err);
+        setStatus('Authentication failed');
       }
     };
 
-    connectMQTT();
+    connectToMQTT();
   }, [robotId]);
 
+  const sendCommand = (command) => {
+    if (!client || !client.connected) {
+      alert('MQTT not connected');
+      return;
+    }
+
+    const topic = `robot/${robotId}/command`;
+    client.publish(topic, command);
+    console.log(`🚀 Sent command: ${command} to ${topic}`);
+  };
+
   return (
-    <div>
-      <h2>Dashboard – Robot ID: {robotId}</h2>
-      {/* Add more components like video feed or control panel here */}
+    <div style={{ padding: 20 }}>
+      <h2>Robot Dashboard: {robotId}</h2>
+      <p>Status: {status}</p>
+
+      <button onClick={() => sendCommand('start')}>Start</button>
+      <button onClick={() => sendCommand('navigate')}>Navigate</button>
+      <button onClick={() => sendCommand('dock')}>Dock</button>
+      <button onClick={() => sendCommand('undock')}>Undock</button>
     </div>
   );
 };

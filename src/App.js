@@ -5,8 +5,16 @@ import awsConfig from './aws-exports';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import { Auth } from 'aws-amplify';
 
 Amplify.configure(awsConfig);
+
+
+const fetchAuthToken = async () => {
+  const session = await Auth.currentSession();
+  const token = session.getIdToken().getJwtToken();
+  return { token };
+};
 
 async function fetchAuthToken() {
   const session = await Auth.currentSession();

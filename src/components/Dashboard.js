@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Auth } from 'aws-amplify';
 import mqtt from 'mqtt';
 
 const region = 'us-east-2'; // Your region

@@ -1,22 +1,24 @@
-import mqtt from 'mqtt';
-import { Auth } from 'aws-amplify';
+import React, { useEffect } from 'react';
+import { connectMQTT } from '../aws/connectMQTT';
 
-const region = 'us-east-2';
-const iotEndpoint = 'wss://a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com/mqtt';
+function Dashboard() {
+  useEffect(() => {
+    connectMQTT().then((client) => {
+      if (client) {
+        client.subscribe('robot/robot001/status');
+        client.on('message', (topic, message) => {
+          console.log(`📩 Message from ${topic}:`, message.toString());
+        });
+      }
+    });
+  }, []);
 
-export const connectMQTT = async () => {
-  const credentials = await Auth.currentCredentials();
-  const { accessKeyId, secretAccessKey, sessionToken } = credentials;
+  return (
+    <div>
+      <h1>Robot Dashboard</h1>
+      {/* More dashboard UI */}
+    </div>
+  );
+}
 
-  const client = mqtt.connect(iotEndpoint, {
-    protocol: 'wss',
-    accessKeyId,
-    secretKey: secretAccessKey,
-    sessionToken,
-    region,
-    reconnectPeriod: 1000,
-  });
-
-  return client;
-};
 export default Dashboard;

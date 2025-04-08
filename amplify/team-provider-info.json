@@ -1,0 +1,20 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-robomeansdashboard-dev-74485-authRole",
+      "UnauthRoleArn": "arn:aws:iam::389629348281:role/amplify-robomeansdashboard-dev-74485-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::389629348281:role/amplify-robomeansdashboard-dev-74485-authRole",
+      "Region": "us-east-2",
+      "DeploymentBucketName": "amplify-robomeansdashboard-dev-74485-deployment",
+      "UnauthRoleName": "amplify-robomeansdashboard-dev-74485-unauthRole",
+      "StackName": "amplify-robomeansdashboard-dev-74485",
+      "StackId": "arn:aws:cloudformation:us-east-2:389629348281:stack/amplify-robomeansdashboard-dev-74485/df7c59b0-1416-11f0-8ad9-0a36c4c288d1",
+      "AmplifyAppId": "d12rszhgv6uh84"
+    },
+    "categories": {
+      "auth": {
+        "robomeansdashboard9e7258da": {}
+      }
+    }
+  }
+}

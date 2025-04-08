@@ -1,0 +1,7 @@
+{
+  "env": {
+    "amplify": {
+      "nodeVersion": "20"
+    }
+  }
+}

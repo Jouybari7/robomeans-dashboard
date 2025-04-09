@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import mqtt from 'mqtt';
 import { Auth } from 'aws-amplify';
-import { getSignedUrl } from '../SigV4Utils';
+import mqtt from 'mqtt';
+import { getSignedUrl } from '../SigV4Utils'; // Must be in src/
 
-const region = 'us-east-2'; // Your region
-const iotEndpoint = 'wss://a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com/mqtt';
+const region = 'us-east-2';
+const iotEndpoint = 'a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com';
 
 const Dashboard = () => {
   const { robotId } = useParams();
@@ -16,17 +16,13 @@ const Dashboard = () => {
     const connectToMQTT = async () => {
       try {
         const credentials = await Auth.currentCredentials();
-        const { accessKeyId, secretAccessKey, sessionToken } = credentials;
-
-        const url = getSignedUrl({
-          accessKeyId,
-          secretAccessKey,
-          sessionToken,
+        const signedUrl = getSignedUrl({
+          host: iotEndpoint,
           region,
-          host: 'a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com',
+          credentials,
         });
-        
-        const mqttClient = mqtt.connect(url, {
+
+        const mqttClient = mqtt.connect(signedUrl, {
           protocol: 'wss',
           reconnectPeriod: 1000,
         });
@@ -38,18 +34,18 @@ const Dashboard = () => {
         });
 
         mqttClient.on('message', (topic, message) => {
-          console.log(`📩 Message on ${topic}: ${message.toString()}`);
+          console.log(`📩 ${topic}: ${message.toString()}`);
           setStatus(message.toString());
         });
 
         mqttClient.on('error', (err) => {
-          console.error('MQTT error:', err);
+          console.error('❌ MQTT error:', err);
           setStatus('Connection error');
         });
 
         setClient(mqttClient);
       } catch (err) {
-        console.error('MQTT connection error:', err);
+        console.error('❌ Failed to connect:', err);
         setStatus('Authentication failed');
       }
     };

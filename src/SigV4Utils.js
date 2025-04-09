@@ -1,29 +1,31 @@
 import crypto from 'crypto-js';
 
-export function getSignedUrl({ accessKeyId, secretAccessKey, sessionToken, region, host }) {
+export function getSignedUrl({ host, region, credentials }) {
+  const time = new Date();
+  const dateStamp = time.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
+  const amzdate = time.toISOString().replace(/[:-]|\.\d{3}/g, '') + 'Z';
   const service = 'iotdevicegateway';
-  const protocol = 'wss';
-  const canonicalUri = '/mqtt';
-  const method = 'GET';
-  const now = new Date();
-  const amzdate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-  const dateStamp = amzdate.substring(0, 8);
   const algorithm = 'AWS4-HMAC-SHA256';
+  const method = 'GET';
+  const canonicalUri = '/mqtt';
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
 
-  const canonicalQuerystring = `X-Amz-Algorithm=${algorithm}&X-Amz-Credential=${encodeURIComponent(
-    `${accessKeyId}/${credentialScope}`
-  )}&X-Amz-Date=${amzdate}&X-Amz-SignedHeaders=host`;
+  const canonicalQuerystring = [
+    `X-Amz-Algorithm=${algorithm}`,
+    `X-Amz-Credential=${encodeURIComponent(`${credentials.accessKeyId}/${credentialScope}`)}`,
+    `X-Amz-Date=${amzdate}`,
+    `X-Amz-SignedHeaders=host`,
+    `X-Amz-Security-Token=${encodeURIComponent(credentials.sessionToken)}`
+  ].join('&');
 
   const canonicalHeaders = `host:${host}\n`;
-  const signedHeaders = 'host';
-  const payloadHash = crypto.SHA256('').toString(crypto.enc.Hex);
+  const payloadHash = crypto.SHA256('').toString();
   const canonicalRequest = [
     method,
     canonicalUri,
     canonicalQuerystring,
     canonicalHeaders,
-    signedHeaders,
+    'host',
     payloadHash
   ].join('\n');
 
@@ -31,22 +33,15 @@ export function getSignedUrl({ accessKeyId, secretAccessKey, sessionToken, regio
     algorithm,
     amzdate,
     credentialScope,
-    crypto.SHA256(canonicalRequest).toString(crypto.enc.Hex)
+    crypto.SHA256(canonicalRequest).toString()
   ].join('\n');
 
-  function sign(key, msg) {
-    return crypto.HmacSHA256(msg, key);
-  }
+  const kDate = crypto.HmacSHA256(dateStamp, 'AWS4' + credentials.secretAccessKey);
+  const kRegion = crypto.HmacSHA256(region, kDate);
+  const kService = crypto.HmacSHA256(service, kRegion);
+  const kSigning = crypto.HmacSHA256('aws4_request', kService);
+  const signature = crypto.HmacSHA256(stringToSign, kSigning).toString();
 
-  const kDate = sign(`AWS4${secretAccessKey}`, dateStamp);
-  const kRegion = sign(kDate, region);
-  const kService = sign(kRegion, service);
-  const kSigning = sign(kService, 'aws4_request');
-  const signature = sign(kSigning, stringToSign).toString(crypto.enc.Hex);
-
-  const finalQueryString =
-    `${canonicalQuerystring}&X-Amz-Signature=${signature}` +
-    (sessionToken ? `&X-Amz-Security-Token=${encodeURIComponent(sessionToken)}` : '');
-
-  return `${protocol}://${host}${canonicalUri}?${finalQueryString}`;
+  const signedUrl = `wss://${host}${canonicalUri}?${canonicalQuerystring}&X-Amz-Signature=${signature}`;
+  return signedUrl;
 }

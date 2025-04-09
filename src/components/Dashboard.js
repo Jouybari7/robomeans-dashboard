@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import mqtt from 'mqtt';
+import { Auth } from 'aws-amplify';
 
 const region = 'us-east-2'; // Your region
 const iotEndpoint = 'wss://a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com/mqtt';

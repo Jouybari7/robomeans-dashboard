@@ -5,16 +5,9 @@ import awsConfig from './aws-exports';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-import { Auth } from 'aws-amplify';
 
 Amplify.configure(awsConfig);
-
-
-const fetchAuthToken = async () => {
-  const session = await Auth.currentSession();
-  const token = session.getIdToken().getJwtToken();
-  return { token };
-};
+window.Auth = Auth; // ✅ make Auth available in browser console
 
 async function fetchAuthToken() {
   const session = await Auth.currentSession();
@@ -38,9 +31,16 @@ function RedirectToDashboard() {
         });
 
         const data = await response.json();
-        setRobotIds(data.robot_ids || []);
+        console.log("👉 Raw data from API:", data); // <-- Add this line
+
+
+        // ✅ Adapt to DynamoDB format where each item is { S: "robot001" }
+        const ids = data.robot_ids.map(item => item.S);
+        console.log("✅ Parsed robot IDs:", ids); // <-- And this line
+ 
+        setRobotIds(ids);
       } catch (error) {
-        console.error("Failed to fetch robot IDs:", error);
+        console.error("❌ Failed to fetch robot IDs:", error);
       }
     };
 

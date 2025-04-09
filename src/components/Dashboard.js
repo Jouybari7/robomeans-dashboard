@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import mqtt from 'mqtt';
 import { Auth } from 'aws-amplify';
+import { getSignedUrl } from '../SigV4Utils';
 
 const region = 'us-east-2'; // Your region
 const iotEndpoint = 'wss://a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com/mqtt';
@@ -17,12 +18,16 @@ const Dashboard = () => {
         const credentials = await Auth.currentCredentials();
         const { accessKeyId, secretAccessKey, sessionToken } = credentials;
 
-        const mqttClient = mqtt.connect(iotEndpoint, {
-          protocol: 'wss',
+        const url = getSignedUrl({
           accessKeyId,
-          secretKey: secretAccessKey,
+          secretAccessKey,
           sessionToken,
           region,
+          host: 'a2mlvkstmb4ozp-ats.iot.us-east-2.amazonaws.com',
+        });
+        
+        const mqttClient = mqtt.connect(url, {
+          protocol: 'wss',
           reconnectPeriod: 1000,
         });
 

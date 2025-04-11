@@ -1,25 +1,41 @@
-import logo from './logo.svg';
-import './App.css';
+// import React, { useEffect, useState } from 'react';
+// import { withAuthenticator } from '@aws-amplify/ui-react';
+// import { Auth } from 'aws-amplify';
+
+// function App({ signOut }) {
+//   const [user, setUser] = useState(null);
+
+//   useEffect(() => {
+//     Auth.currentAuthenticatedUser()
+//       .then((user) => {
+//         setUser(user);
+//       })
+//       .catch((err) => {
+//         console.error('Error loading user', err);
+//       });
+//   }, []);
+
+//   if (!user) {
+//     return <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading user...</div>;
+//   }
+
+//   return (
+//     <div style={{ textAlign: 'center', marginTop: '50px' }}>
+//       <h1>Welcome, {user.username}!</h1>
+//       <button onClick={signOut}>Sign out</button>
+//     </div>
+//   );
+// }
+
+// export default withAuthenticator(App);
+
+
+import React from 'react';
+import { withAuthenticator } from '@aws-amplify/ui-react';
+import Dashboard from './Dashboard';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  return <Dashboard />;
 }
 
-export default App;
+export default withAuthenticator(App);

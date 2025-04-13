@@ -3,49 +3,71 @@ import { socket } from './socket';
 import { Auth } from 'aws-amplify';
 
 function Dashboard() {
-  const robotId = 'robot001';
-  const [status, setStatus] = useState('Disconnected');
+  const [robotIds, setRobotIds] = useState([]);
+  const [statuses, setStatuses] = useState({});
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const connectSocket = async () => {
+    const connectSocketAndFetchRobots = async () => {
       try {
-        await Auth.currentSession(); // ensure user is authenticated
+        const session = await Auth.currentSession();
+        const idToken = session.getIdToken().getJwtToken();
+
+        const res = await fetch('http://3.98.138.140:8000/api/myrobots', {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          console.error("❌ API returned unexpected data:", data);
+          setRobotIds([]);
+          return;
+        }
+
+        setRobotIds(data);
+
         socket.connect();
 
         socket.on('connect', () => {
           console.log('✅ Connected to WebSocket server');
-          socket.emit('register_ui', { robot_id: robotId });
+
+          data.forEach((robotId) => {
+            console.log(`📡 Registering robot: ${robotId}`);
+            socket.emit('register_ui', { robot_id: robotId });
+          });
+
+          setConnected(true);
         });
 
         socket.on('status', (data) => {
-          if (data.robot_id === robotId) {
-            console.log(`📥 Status update: ${data.status}`);
-            setStatus(data.status);
-          }
+          const { robot_id, status } = data;
+          setStatuses((prev) => ({ ...prev, [robot_id]: status }));
         });
 
         socket.on('disconnect', () => {
           console.log('❌ Disconnected from WebSocket');
-          setStatus('Disconnected');
+          setConnected(false);
         });
       } catch (err) {
-        console.error('🔐 User not authenticated', err);
+        console.error('🔐 Auth error or fetch failed:', err);
       }
     };
 
-    connectSocket();
+    connectSocketAndFetchRobots();
 
     return () => {
       socket.disconnect();
     };
   }, []);
 
-  const sendCommand = (command) => {
+  const sendCommand = (robotId, command) => {
     socket.emit('command_to_robot', {
       robot_id: robotId,
       command,
     });
-    console.log(`📤 Sent: ${command}`);
+    console.log(`📤 Sent "${command}" to ${robotId}`);
   };
 
   const handleSignOut = async () => {
@@ -55,13 +77,32 @@ function Dashboard() {
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h2>Robot: {robotId}</h2>
-      <p>Status: {status}</p>
-      <button onClick={() => sendCommand('start')}>Start</button>
-      <button onClick={() => sendCommand('dock')}>Dock</button>
-      <button onClick={() => sendCommand('navigate')}>Navigate</button>
-      <button onClick={() => sendCommand('undock')}>Undock</button>
-      <br /><br />
+      <h2>Your Robots</h2>
+      {!connected && <p>Connecting to robots...</p>}
+      {robotIds.length === 0 ? (
+        <p>Loading robots...</p>
+      ) : (
+        robotIds.map((robotId) => (
+          <div
+            key={robotId}
+            style={{
+              border: '1px solid #aaa',
+              borderRadius: '8px',
+              padding: '15px',
+              margin: '20px auto',
+              maxWidth: '350px',
+            }}
+          >
+            <h3>Robot: {robotId}</h3>
+            <p>Status: {statuses[robotId] || 'Disconnected'}</p>
+            <button onClick={() => sendCommand(robotId, 'start')}>Start</button>
+            <button onClick={() => sendCommand(robotId, 'dock')}>Dock</button>
+            <button onClick={() => sendCommand(robotId, 'navigate')}>Navigate</button>
+            <button onClick={() => sendCommand(robotId, 'undock')}>Undock</button>
+          </div>
+        ))
+      )}
+      <br />
       <button onClick={handleSignOut}>Sign Out</button>
     </div>
   );

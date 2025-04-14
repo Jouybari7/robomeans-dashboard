@@ -31,20 +31,25 @@ function Dashboard() {
         const userInfo = await Auth.currentUserInfo();
         const email = userInfo?.attributes?.email;
 
+        // Set up WebSocket only after email + robotIds are known
         socket.connect();
 
         socket.on('connect', () => {
           console.log('✅ Connected to WebSocket server');
 
-          // Register UI session with email and robot list
-          socket.emit('register_ui', {
-            email,
-            robot_ids: data
+          // 🔐 Register user email to backend (session enforcement)
+          socket.emit('register_ui', { email });
+
+          // 📡 Register robots
+          data.forEach((robotId) => {
+            console.log(`📡 Registering robot: ${robotId}`);
+            socket.emit('register_ui_robot', { robot_id: robotId });
           });
 
           setConnected(true);
         });
 
+        // 👀 Listen for status updates
         socket.on('status', (data) => {
           const { robot_id, status } = data;
           setStatuses((prev) => ({ ...prev, [robot_id]: status }));
@@ -55,6 +60,7 @@ function Dashboard() {
           setConnected(false);
         });
 
+        // 🚫 Handle forced logout
         socket.on('force_logout', () => {
           alert("⚠️ You've been logged out because your account was used on another device.");
           Auth.signOut().then(() => window.location.reload());

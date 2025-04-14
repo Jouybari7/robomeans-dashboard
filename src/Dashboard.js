@@ -13,8 +13,7 @@ function Dashboard() {
         const session = await Auth.currentSession();
         const idToken = session.getIdToken().getJwtToken();
 
-        // const res = await fetch('http://3.98.138.140:8000/api/myrobots', {
-          const response = await fetch("https://api.robomeans.com/api/myrobots", {
+        const response = await fetch("https://api.robomeans.com/api/myrobots", {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -29,14 +28,18 @@ function Dashboard() {
 
         setRobotIds(data);
 
+        const userInfo = await Auth.currentUserInfo();
+        const email = userInfo?.attributes?.email;
+
         socket.connect();
 
         socket.on('connect', () => {
           console.log('✅ Connected to WebSocket server');
 
-          data.forEach((robotId) => {
-            console.log(`📡 Registering robot: ${robotId}`);
-            socket.emit('register_ui', { robot_id: robotId });
+          // Register UI session with email and robot list
+          socket.emit('register_ui', {
+            email,
+            robot_ids: data
           });
 
           setConnected(true);
@@ -51,6 +54,12 @@ function Dashboard() {
           console.log('❌ Disconnected from WebSocket');
           setConnected(false);
         });
+
+        socket.on('force_logout', () => {
+          alert("⚠️ You've been logged out because your account was used on another device.");
+          Auth.signOut().then(() => window.location.reload());
+        });
+
       } catch (err) {
         console.error('🔐 Auth error or fetch failed:', err);
       }

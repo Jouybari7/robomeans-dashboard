@@ -13,7 +13,8 @@ function Dashboard() {
         const session = await Auth.currentSession();
         const idToken = session.getIdToken().getJwtToken();
 
-        const res = await fetch('http://3.98.138.140:8000/api/myrobots', {
+        // const res = await fetch('http://3.98.138.140:8000/api/myrobots', {
+          const response = await fetch("https://api.robomeans.com/api/myrobots", {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },

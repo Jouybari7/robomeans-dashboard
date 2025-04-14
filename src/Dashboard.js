@@ -20,7 +20,7 @@ function Dashboard() {
           },
         });
 
-        const data = await res.json();
+        const data = await response.json();
         if (!Array.isArray(data)) {
           console.error("❌ API returned unexpected data:", data);
           setRobotIds([]);

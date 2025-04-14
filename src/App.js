@@ -30,12 +30,23 @@
 // export default withAuthenticator(App);
 
 
+// import React from 'react';
+// import { withAuthenticator } from '@aws-amplify/ui-react';
+// import Dashboard from './Dashboard';
+
+// function App() {
+//   return <Dashboard />;
+// }
+
+// export default withAuthenticator(App);
+
 import React from 'react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import Dashboard from './Dashboard';
 
-function App() {
-  return <Dashboard />;
+function App({ signOut }) {
+  return <Dashboard signOut={signOut} />;
 }
 
-export default withAuthenticator(App);
+// 👇 This disables social sign-ins like "Sign in with AWS"
+export default withAuthenticator(App, { federated: false });

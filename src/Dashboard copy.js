@@ -3,7 +3,7 @@ import { socket } from './socket';
 import { Auth } from 'aws-amplify';
 
 function Dashboard() {
-  const [robots, setRobots] = useState([]); // Array of { robot_id, ui_type }
+  const [robotIds, setRobotIds] = useState([]);
   const [statuses, setStatuses] = useState({});
   const [connected, setConnected] = useState(false);
 
@@ -20,33 +20,39 @@ function Dashboard() {
         });
 
         const data = await response.json();
-        if (!Array.isArray(data.robots)) {
+        if (!Array.isArray(data)) {
           console.error("❌ API returned unexpected data:", data);
-          setRobots([]);
+          setRobotIds([]);
           return;
         }
 
-        setRobots(data.robots);
+        setRobotIds(data);
 
         const userInfo = await Auth.currentUserInfo();
         const email = userInfo?.attributes?.email;
 
+        // Set up WebSocket only after email + robotIds are known
         socket.connect();
 
         socket.on('connect', () => {
           console.log('✅ Connected to WebSocket server');
 
-          socket.emit('register_ui', {
-            email,
-            robot_ids: data.robots.map(r => r.robot_id),
+          // 🔐 Register user email to backend (session enforcement)
+          socket.emit('register_ui', { email });
+
+          // 📡 Register robots
+          data.forEach((robotId) => {
+            console.log(`📡 Registering robot: ${robotId}`);
+            socket.emit('register_ui_robot', { robot_id: robotId });
           });
 
           setConnected(true);
         });
 
+        // 👀 Listen for status updates
         socket.on('status', (data) => {
           const { robot_id, status } = data;
-          setStatuses(prev => ({ ...prev, [robot_id]: status }));
+          setStatuses((prev) => ({ ...prev, [robot_id]: status }));
         });
 
         socket.on('disconnect', () => {
@@ -54,6 +60,7 @@ function Dashboard() {
           setConnected(false);
         });
 
+        // 🚫 Handle forced logout
         socket.on('force_logout', () => {
           alert("⚠️ You've been logged out because your account was used on another device.");
           Auth.signOut().then(() => window.location.reload());
@@ -65,7 +72,10 @@ function Dashboard() {
     };
 
     connectSocketAndFetchRobots();
-    return () => socket.disconnect();
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const sendCommand = (robotId, command) => {
@@ -81,56 +91,32 @@ function Dashboard() {
     window.location.reload();
   };
 
-  const renderRobotCard = ({ robot_id, ui_type }) => {
-    const status = statuses[robot_id] || 'Disconnected';
-
-    return (
-      <div
-        key={robot_id}
-        style={{
-          border: '1px solid #aaa',
-          borderRadius: '8px',
-          padding: '15px',
-          margin: '20px auto',
-          maxWidth: '350px',
-        }}
-      >
-        <h3>Robot: {robot_id}</h3>
-        <p>Status: {status}</p>
-        <p>UI Type: {ui_type}</p>
-
-        {ui_type === 'userA' && (
-          <button onClick={() => sendCommand(robot_id, 'start')}>Start</button>
-        )}
-
-        {ui_type === 'adminA' && (
-          <>
-            <button onClick={() => sendCommand(robot_id, 'dock')}>Dock</button>
-            <button onClick={() => sendCommand(robot_id, 'navigate')}>Navigate</button>
-            <button onClick={() => sendCommand(robot_id, 'undock')}>Undock</button>
-          </>
-        )}
-
-        {ui_type === 'default' && (
-          <>
-            <button onClick={() => sendCommand(robot_id, 'start')}>Start</button>
-            <button onClick={() => sendCommand(robot_id, 'dock')}>Dock</button>
-            <button onClick={() => sendCommand(robot_id, 'navigate')}>Navigate</button>
-            <button onClick={() => sendCommand(robot_id, 'undock')}>Undock</button>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
       <h2>Your Robots</h2>
       {!connected && <p>Connecting to robots...</p>}
-      {robots.length === 0 ? (
+      {robotIds.length === 0 ? (
         <p>Loading robots...</p>
       ) : (
-        robots.map(renderRobotCard)
+        robotIds.map((robotId) => (
+          <div
+            key={robotId}
+            style={{
+              border: '1px solid #aaa',
+              borderRadius: '8px',
+              padding: '15px',
+              margin: '20px auto',
+              maxWidth: '350px',
+            }}
+          >
+            <h3>Robot: {robotId}</h3>
+            <p>Status: {statuses[robotId] || 'Disconnected'}</p>
+            <button onClick={() => sendCommand(robotId, 'start')}>Start</button>
+            <button onClick={() => sendCommand(robotId, 'dock')}>Dock</button>
+            <button onClick={() => sendCommand(robotId, 'navigate')}>Navigate</button>
+            <button onClick={() => sendCommand(robotId, 'undock')}>Undock</button>
+          </div>
+        ))
       )}
       <br />
       <button onClick={handleSignOut}>Sign Out</button>

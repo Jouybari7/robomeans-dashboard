@@ -118,13 +118,11 @@ function Dashboard() {
     }));
   };
 
-  const handleMissionChange = (robotId, index) => {
-    setMissions(prev => {
-      const current = prev[robotId] || Array(10).fill(false);
-      const updated = [...current];
-      updated[index] = !updated[index];
-      return { ...prev, [robotId]: updated };
-    });
+  const handleMissionChange = (robotId, updatedMissions) => {
+    setMissions(prev => ({
+      ...prev,
+      [robotId]: updatedMissions
+    }));
   };
 
   const handleSignOut = async () => {

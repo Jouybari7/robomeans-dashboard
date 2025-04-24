@@ -36,8 +36,22 @@ export default function renderRobotCard(robot, sharedProps) {
   const { statuses, robotStates, missions, sendCommand, handleMissionChange } = sharedProps;
   const status = statuses[robot_id] || 'Disconnected';
   const robotState = robotStates[robot_id] || {};
-  const missionState = missions[robot_id] || Array(10).fill(false);
-  const { loading, battery = 0 } = robotState;
+  const missionState = missions[robot_id] || []; // [{ name, pose, selected }]
+  const { loading, battery = 0, connection = 'disconnected' } = robotState;
+
+  const toggleMissionSelection = (index) => {
+    const updated = [...missionState];
+    updated[index] = { ...updated[index], selected: !updated[index].selected };
+    handleMissionChange(robot_id, updated);
+  };
+
+  const confirmAndRemove = (index) => {
+    const confirm = window.confirm(`Are you sure you want to remove mission "${missionState[index].name}"?`);
+    if (!confirm) return;
+    const updated = [...missionState];
+    updated.splice(index, 1);
+    handleMissionChange(robot_id, updated);
+  };
 
   return (
     <div
@@ -53,10 +67,12 @@ export default function renderRobotCard(robot, sharedProps) {
       }}
     >
       <h3>👨‍💼 Admin Robot: {robot_id}</h3>
-      {/* <p>Status: {status}</p> */}
-      <p>Status: <strong style={{ color: robotState.connection === 'connected' ? 'green' : 'red' }}>
-      {robotState.connection === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
-      </strong></p>
+      <p>
+        Status:{' '}
+        <strong style={{ color: connection === 'connected' ? 'green' : 'red' }}>
+          {connection === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
+        </strong>
+      </p>
 
       <div style={{ marginBottom: '10px' }}>
         🔋 Battery: <strong>{battery}%</strong>
@@ -115,72 +131,63 @@ export default function renderRobotCard(robot, sharedProps) {
       </div>
 
       <div style={{ marginTop: '20px' }}>
-        <h4>Manual Control</h4>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '10px',
-            justifyItems: 'center',
-            alignItems: 'center',
-            width: '200px',
-            margin: '0 auto',
-          }}
-        >
-          <div></div>
-          <button onClick={() => sendCommand(robot_id, 'Forward')} disabled={loading} style={buttonStyle}>
-            ↑
-          </button>
-          <div></div>
+        <h4>Missions</h4>
 
-          <button onClick={() => sendCommand(robot_id, 'Left')} disabled={loading} style={buttonStyle}>
-            ←
-          </button>
-          <div></div>
-          <button onClick={() => sendCommand(robot_id, 'Right')} disabled={loading} style={buttonStyle}>
-            →
-          </button>
+        {missionState.length === 0 && <p>No missions yet.</p>}
 
-          <div></div>
-          <button onClick={() => sendCommand(robot_id, 'Backward')} disabled={loading} style={buttonStyle}>
-            ↓
-          </button>
-          <div></div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: '20px' }}>
-        <h4>Mission</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
-          {missionState.map((checked, index) => (
-            <label key={index}>
+        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+          {missionState.map((mission, index) => (
+            <li key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
               <input
                 type="checkbox"
-                checked={checked}
-                onChange={() => handleMissionChange(robot_id, index)}
+                checked={mission.selected || false}
+                onChange={() => toggleMissionSelection(index)}
                 disabled={loading}
               />
-              #{index + 1}
-            </label>
+              <span>🚀 <strong>{mission.name}</strong></span>
+              <code style={{ fontSize: '0.9em' }}>{JSON.stringify(mission.pose)}</code>
+              <button onClick={() => confirmAndRemove(index)} disabled={loading}>❌ Remove</button>
+            </li>
           ))}
-        </div>
+        </ul>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
-          <button
-            onClick={() => sendCommand(robot_id, 'deploy')}
-            disabled={loading}
-            style={{ ...actionButtonStyle, backgroundColor: '#2196f3', color: 'white' }}
-          >
-            🚀 Deploy
-          </button>
-          <button
-            onClick={() => sendCommand(robot_id, 'Cancel')}
-            disabled={loading}
-            style={{ ...actionButtonStyle, ...buttonColors.cancel }}
-          >
-            ✖️ Cancel
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            const name = prompt("Enter mission name:");
+            if (!name) return;
+
+            const poseStr = prompt("Enter pose as 5 comma-separated numbers (e.g. 1.0,2.0,3.0,0,1):");
+            const pose = poseStr?.split(',').map(Number);
+            if (!pose || pose.length !== 5 || pose.some(isNaN)) {
+              alert("Invalid pose format.");
+              return;
+            }
+
+            const newMission = { name, pose, selected: false };
+            handleMissionChange(robot_id, [...missionState, newMission]);
+          }}
+          disabled={loading}
+          style={{ marginTop: '10px' }}
+        >
+          ➕ Add Mission
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+        <button
+          onClick={() => sendCommand(robot_id, 'deploy')}
+          disabled={loading}
+          style={{ ...actionButtonStyle, backgroundColor: '#2196f3', color: 'white' }}
+        >
+          🚀 Deploy
+        </button>
+        <button
+          onClick={() => sendCommand(robot_id, 'Cancel')}
+          disabled={loading}
+          style={{ ...actionButtonStyle, ...buttonColors.cancel }}
+        >
+          ✖️ Cancel
+        </button>
       </div>
 
       <button

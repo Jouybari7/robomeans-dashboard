@@ -9,10 +9,39 @@ function Dashboard() {
   const [connected, setConnected] = useState(false);
   const [robotStates, setRobotStates] = useState({});
   const [missions, setMissions] = useState({});
-  const [cardModules, setCardModules] = useState({}); // { ui_type: module }
+  const [cardModules, setCardModules] = useState({});
 
-  useEffect(() => {console.log("📦 robotStates updated:", robotStates);}, [robotStates]); {/* for debugging purposes */}
-  
+  async function fetchMissionsFromDB(robot_id) {
+    const session = await Auth.currentSession();
+    const token = session.getIdToken().getJwtToken();
+
+    const res = await fetch(`https://api.robomeans.com/api/get_missions/${robot_id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    return data.missions || [];
+  }
+
+  async function saveMissionsToDB(robot_id, missions) {
+    const session = await Auth.currentSession();
+    const token = session.getIdToken().getJwtToken();
+    const userInfo = await Auth.currentUserInfo();
+    const email = userInfo?.attributes?.email;
+
+    await fetch("https://api.robomeans.com/api/save_missions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, robot_id, missions }),
+    });
+  }
+
+  useEffect(() => {
+    console.log("📦 robotStates updated:", robotStates);
+  }, [robotStates]);
 
   useEffect(() => {
     const connectSocketAndFetchRobots = async () => {
@@ -31,7 +60,6 @@ function Dashboard() {
           return;
         }
 
-        // preload renderers
         const modules = {};
         for (const robot of data.robots) {
           const uiType = robot.ui_type || 'default';
@@ -48,6 +76,12 @@ function Dashboard() {
 
         setCardModules(modules);
         setRobots(data.robots);
+
+        const loadedMissions = {};
+        for (const robot of data.robots) {
+          loadedMissions[robot.robot_id] = await fetchMissionsFromDB(robot.robot_id);
+        }
+        setMissions(loadedMissions);
 
         const userInfo = await Auth.currentUserInfo();
         const email = userInfo?.attributes?.email;
@@ -66,26 +100,22 @@ function Dashboard() {
         socket.on('status', (data) => {
           const { robot_id } = data;
           if (!robot_id) return;
-        
-          // Update raw status (optional)
-          setStatuses(prev => ({ ...prev, [robot_id]: data.mode })); // or any other field
-        
-          // Update robot state
+
+          setStatuses(prev => ({ ...prev, [robot_id]: data.mode }));
+
           setRobotStates(prev => {
             const previous = prev[robot_id] || {};
-        
             return {
               ...prev,
               [robot_id]: {
                 ...previous,
-                ...data,              // Overwrite fields like pose, mode, etc.
+                ...data,
                 loading: false,
-                lastCommand: data.mode || previous.lastCommand,  // Save mode as lastCommand (or pick another field if needed)
+                lastCommand: data.mode || previous.lastCommand,
               },
             };
           });
         });
-        
 
         socket.on('disconnect', () => setConnected(false));
         socket.on('force_logout', () => {
@@ -118,11 +148,13 @@ function Dashboard() {
     }));
   };
 
-  const handleMissionChange = (robotId, updatedMissions) => {
+  const handleMissionChange = async (robotId, updatedMissions) => {
     setMissions(prev => ({
       ...prev,
       [robotId]: updatedMissions
     }));
+
+    await saveMissionsToDB(robotId, updatedMissions);
   };
 
   const handleSignOut = async () => {
@@ -151,8 +183,10 @@ function Dashboard() {
         })
       )}
       <br />
-      
-      <pre style={{ textAlign: 'left', background: '#eee', padding: '10px', marginTop: '20px' }}> {JSON.stringify(robotStates, null, 2)}</pre>  {/* for debugging purposes */}
+
+      <pre style={{ textAlign: 'left', background: '#eee', padding: '10px', marginTop: '20px' }}>
+        {JSON.stringify(robotStates, null, 2)}
+      </pre>
 
       <button onClick={handleSignOut}>Sign Out</button>
     </div>

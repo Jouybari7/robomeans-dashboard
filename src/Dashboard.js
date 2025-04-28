@@ -10,6 +10,7 @@ function Dashboard() {
   const [robotStates, setRobotStates] = useState({});
   const [missions, setMissions] = useState({});
   const [cardModules, setCardModules] = useState({});
+  const [pickingPoseRobotId, setPickingPoseRobotId] = useState(null);
 
   async function fetchMissionsFromDB(robot_id) {
     const session = await Auth.currentSession();
@@ -168,6 +169,9 @@ function Dashboard() {
     missions,
     sendCommand,
     handleMissionChange,
+    pickingPoseRobotId,
+    setPickingPoseRobotId,
+    connected,
   };
 
   return (
@@ -178,8 +182,10 @@ function Dashboard() {
         <p>Loading robots...</p>
       ) : (
         robots.map(robot => {
-          const renderer = cardModules[robot.ui_type || 'default'];
-          return renderer ? renderer(robot, sharedProps) : null;
+          const Renderer = cardModules[robot.ui_type || 'default'];
+          return Renderer ? (
+            <Renderer key={robot.robot_id} robot={robot} sharedProps={sharedProps} />
+          ) : null;
         })
       )}
       <br />

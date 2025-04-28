@@ -336,14 +336,14 @@ export default function RobotCard({ robot, sharedProps }) {
         transform: 'translate(-50%, -50%)',
         textAlign: 'center'
       }}>
-        <div style={{
+        {/* <div style={{
           width: '8px',
           height: '8px',
           backgroundColor: '#ffa500',
           borderRadius: '50%',
           border: '1px solid black',
           marginBottom: '2px'
-        }} />
+        }} /> */}
         <div style={{
           fontSize: '10px',
           fontWeight: 'bold',

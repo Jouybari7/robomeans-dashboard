@@ -583,18 +583,34 @@ export default function RobotCard({ robot, sharedProps }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px' }}>
         <button
           onClick={() => sendCommand(robot_id, 'Save')}
-          disabled={loading}
-          style={{ ...actionButtonStyle, ...buttonColors.save }}
-        >
+          disabled={loading  || robotState.mode_status?.toLowerCase() !== 'map'}
+           style={{
+    ...actionButtonStyle,
+    ...buttonColors.save,
+    ...(loading || robotState.mode_status?.toLowerCase() !== 'map'
+      ? { opacity: 0.5, cursor: 'not-allowed' }
+      : {}),
+  }}
+>
           💾 Save
         </button>
-        <button
-          onClick={() => sendCommand(robot_id, 'Delete')}
-          disabled={isInteractionBlocked}
-          style={{ ...actionButtonStyle, ...buttonColors.delete }}
-        >
-          🗑️ Delete
-        </button>
+<button
+  onClick={() => {
+    const confirmDelete = window.confirm('Are you sure you want to delete the map?');
+    if (confirmDelete) {
+      sendCommand(robot_id, 'Delete');
+    }
+  }}
+  disabled={isInteractionBlocked}
+  style={{
+    ...actionButtonStyle,
+    ...buttonColors.delete,
+    ...(isInteractionBlocked ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+  }}
+>
+  🗑️ Delete
+</button>
+
       </div>
 
       {/* === Missions List === */}

@@ -41,8 +41,20 @@ export default function RobotCard({ robot, sharedProps }) {
   const robotState = robotStates[robot_id] || {};
   const missionState = missions[robot_id] || [];
   const { loading = false, battery = 0, connection = 'disconnected'} = robotState;
-  const map_url  = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png`;
-  const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml`;
+  const [mapTimestamp, setMapTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMapTimestamp(Date.now());
+    }, 2000); // 2000 ms = 2 seconds update the map
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+  // const map_url  = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png`;
+  // const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml`;
+  const map_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png?ts=${mapTimestamp}`;
+  const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml?ts=${mapTimestamp}`;
+
   // const isInteractionBlocked = loading || connection !== 'connected';
   const isInteractionBlocked = loading || !connected;
 

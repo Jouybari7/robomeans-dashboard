@@ -515,14 +515,14 @@ export default function RobotCard({ robot, sharedProps }) {
       <Slider
         label="Mode"
         options={['Map', 'Drive', 'Navigate']}
-        value={robotState.mode}
+        value={robotState.mode_status ? robotState.mode_status.charAt(0).toUpperCase() + robotState.mode_status.slice(1) : 'Map'}
         onChange={(opt) => sendCommand(robot_id, opt.toLowerCase())}
         disabled={isInteractionBlocked}
       />
       <Slider
         label="Homing"
         options={['Undock', 'Dock']}
-        value={robotState.dock}
+        value={robotState.dock === 1 ? 'Dock' : 'Undock'}
         onChange={(opt) => sendCommand(robot_id, opt.toLowerCase())}
         disabled={isInteractionBlocked}
       />

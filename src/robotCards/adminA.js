@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Slider from '../components/Slider';
 import yaml from 'js-yaml'; // npm install js-yaml
 
+
 const buttonStyle = {
   padding: '10px 15px',
   fontSize: '18px',
@@ -43,40 +44,37 @@ export default function RobotCard({ robot, sharedProps }) {
   const { loading = false, battery = 0, connection = 'disconnected'} = robotState;
   const [mapTimestamp, setMapTimestamp] = useState(Date.now());
 
+
   useEffect(() => {
+  const handleGlobalMouseUp = () => {
+    stopContinuousCommand();
+  };
+
+  document.addEventListener('mouseup', handleGlobalMouseUp);
+
+  return () => {
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+  };
+}, []);
+
+useEffect(() => {
     const interval = setInterval(() => {
       setMapTimestamp(Date.now());
     }, 2000); // 2000 ms = 2 seconds update the map
 
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
-  // const map_url  = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png`;
-  // const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml`;
   const map_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png?ts=${mapTimestamp}`;
   const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml?ts=${mapTimestamp}`;
-
-  // const isInteractionBlocked = loading || connection !== 'connected';
   const isInteractionBlocked = loading || !connected;
-
   const [originPixels, setOriginPixels] = useState(null);
   const [imgSize, setImgSize] = useState(null);
   const [scaledOriginPixels, setScaledOriginPixels] = useState(null);
   const [robotPosePixels, setRobotPosePixels] = useState(null);
-
-  // const [isPickingPose, setIsPickingPose] = useState(false);
   const [poseStartPixel, setPoseStartPixel] = useState(null);
   const [mousePixel, setMousePixel] = useState(null);
-
   const mapResolution = 0.05; // meters per pixel
-
-  const handleDirection = (direction) => {
-    sendCommand(robot_id, { command: 'move', direction });
-  };
-
-
   const API_URL = "https://api.robomeans.com";  // <--- Change if needed
-
-
   const saveMissionsToDB = async () => {
     try {
       const token = localStorage.getItem("token");  // Assuming token is saved
@@ -94,8 +92,6 @@ export default function RobotCard({ robot, sharedProps }) {
     }
   };  
 
-
-
   const toggleMissionSelection = (index) => {
     const updated = [...missionState];
     updated[index] = { ...updated[index], selected: !updated[index].selected };
@@ -110,7 +106,29 @@ export default function RobotCard({ robot, sharedProps }) {
     handleMissionChange(robot_id, updated);
   };
 
-  useEffect(() => {
+const [movementInterval, setMovementInterval] = useState(null);
+
+const startContinuousCommand = (direction) => {
+  if (movementInterval) return;  // Prevent multiple intervals
+
+  sendCommand(robot_id,  direction );  // Immediate send
+
+  const interval = setInterval(() => {
+  sendCommand(robot_id, direction);
+  }, 100);  // Still every 100ms, but smoother
+
+  setMovementInterval(interval);
+};
+
+const stopContinuousCommand = () => {
+  if (movementInterval) {
+    clearInterval(movementInterval);
+    setMovementInterval(null);
+  }
+};
+
+
+useEffect(() => {
     if (pickingPoseRobotId !== robot_id) {
       setPoseStartPixel(null);
       setMousePixel(null);
@@ -118,7 +136,7 @@ export default function RobotCard({ robot, sharedProps }) {
   }, [pickingPoseRobotId, robot_id]);
 
   
-  useEffect(() => {
+useEffect(() => {
     if (!map_url) return;
     const loadYaml = async () => {
       try {
@@ -141,7 +159,7 @@ export default function RobotCard({ robot, sharedProps }) {
   }, [map_url, yaml_url]);
   
 
-  useEffect(() => {
+useEffect(() => {
     if (imgSize && originPixels) {
       const scaleX = imgSize.width / imgSize.naturalWidth;
       const scaleY = imgSize.height / imgSize.naturalHeight;
@@ -152,7 +170,7 @@ export default function RobotCard({ robot, sharedProps }) {
     }
   }, [imgSize, originPixels]);
 
-  useEffect(() => {
+useEffect(() => {
     if (imgSize && originPixels && robotState.pose && Array.isArray(robotState.pose)) {
       const [x, y, theta] = robotState.pose;
       const scaleX = imgSize.width / imgSize.naturalWidth;
@@ -168,51 +186,6 @@ export default function RobotCard({ robot, sharedProps }) {
       });
     }
   }, [imgSize, originPixels, robotState.pose]);
-
-  // const handleMapClick = (e) => {
-  //   if (!imgSize || !originPixels || !isPickingPose) return;
-
-  //   const rect = e.target.getBoundingClientRect();
-  //   const clickX = e.clientX - rect.left;
-  //   const clickY = e.clientY - rect.top;
-
-  //   if (!poseStartPixel) {
-  //     setPoseStartPixel({ x: clickX, y: clickY });
-  //   } else {
-  //     const start = poseStartPixel;
-  //     const end = { x: clickX, y: clickY };
-
-  //     const scaleX = imgSize.naturalWidth / imgSize.width;
-  //     const scaleY = imgSize.naturalHeight / imgSize.height;
-
-  //     const mapX_px = start.x * scaleX;
-  //     const mapY_px = imgSize.naturalHeight - (start.y * scaleY);
-
-  //     const relX = (mapX_px - originPixels.x);
-  //     const relY = (mapY_px - originPixels.y);
-
-  //     const realX = relX * mapResolution;
-  //     const realY = relY * mapResolution;
-
-  //     const dx = end.x - start.x;
-  //     const dy = -(end.y - start.y);
-  //     const theta = Math.atan2(dy, dx);
-
-  //     const name = prompt('Enter mission name:');
-  //     if (name) {
-  //       const newMission = {
-  //         name,
-  //         pose: [parseFloat(realX.toFixed(2)), parseFloat(realY.toFixed(2)), parseFloat(theta.toFixed(2))],
-  //         selected: false,
-  //       };
-  //       handleMissionChange(robot_id, [...missionState, newMission]);
-  //     }
-
-  //     setPickingPoseRobotId(null);  // <-- clear picking mode
-  //     setPoseStartPixel(null);
-  //     setMousePixel(null);
-  //   }
-  // };
   
   const handleMapClick = (e) => {
     console.log('Map click on', robot_id, {
@@ -319,7 +292,6 @@ export default function RobotCard({ robot, sharedProps }) {
 
       {map_url && (
         <div style={{ marginTop: '15px', textAlign: 'center', position: 'relative' }}>
-          <h4>🗺️ Map</h4>
           {/* <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%' }}> */}
           <div style={{
             position: 'relative',
@@ -348,14 +320,6 @@ export default function RobotCard({ robot, sharedProps }) {
         transform: 'translate(-50%, -50%)',
         textAlign: 'center'
       }}>
-        {/* <div style={{
-          width: '8px',
-          height: '8px',
-          backgroundColor: '#ffa500',
-          borderRadius: '50%',
-          border: '1px solid black',
-          marginBottom: '2px'
-        }} /> */}
         <div style={{
           fontSize: '10px',
           fontWeight: 'bold',
@@ -421,7 +385,6 @@ export default function RobotCard({ robot, sharedProps }) {
   onClick={handleMapClick}
   onMouseMove={handleMouseMove}
 />
-
 
             {/* Origin */}
             {scaledOriginPixels && (
@@ -529,7 +492,6 @@ export default function RobotCard({ robot, sharedProps }) {
 
       {/* === D-Pad === */}
       <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        <h4>🕹️ Manual Control</h4>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 50px)',
@@ -539,7 +501,8 @@ export default function RobotCard({ robot, sharedProps }) {
         }}>
           <div />
           <button
-            onClick={() => handleDirection('forward')}
+            onMouseDown={() => startContinuousCommand('forward')}
+            onMouseUp={stopContinuousCommand}
             disabled={isInteractionBlocked}
             style={buttonStyle}
           >
@@ -547,21 +510,19 @@ export default function RobotCard({ robot, sharedProps }) {
           </button>
           <div />
           <button
-            onClick={() => handleDirection('left')}
+            onMouseDown={() => startContinuousCommand('left')}
+            onMouseUp={stopContinuousCommand}
+            onMouseLeave={stopContinuousCommand}
             disabled={isInteractionBlocked}
             style={buttonStyle}
           >
             ⬅️
           </button>
+          <div />
           <button
-            onClick={() => handleDirection('stop')}
-            disabled={isInteractionBlocked}
-            style={buttonStyle}
-          >
-            ⏹️
-          </button>
-          <button
-            onClick={() => handleDirection('right')}
+            onMouseDown={() => startContinuousCommand('right')}
+            onMouseUp={stopContinuousCommand}
+            onMouseLeave={stopContinuousCommand}
             disabled={isInteractionBlocked}
             style={buttonStyle}
           >
@@ -569,7 +530,9 @@ export default function RobotCard({ robot, sharedProps }) {
           </button>
           <div />
           <button
-            onClick={() => handleDirection('backward')}
+            onMouseDown={() => startContinuousCommand('backward')}
+            onMouseUp={stopContinuousCommand}
+            onMouseLeave={stopContinuousCommand}
             disabled={isInteractionBlocked}
             style={buttonStyle}
           >

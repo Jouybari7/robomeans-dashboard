@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Slider from '../components/Slider';
 import yaml from 'js-yaml'; // npm install js-yaml
 import RobotCamera from '../components/RobotCamera';
+import { Joystick } from 'react-joystick-component';
 
 const buttonStyle = {
   padding: '10px 15px',
@@ -48,27 +49,38 @@ export default function RobotCard({ robot, sharedProps }) {
   const mapResolution = 0.05; // meters per pixel
   // const API_URL = "https://api.robomeans.com";  // <--- Change if needed
   const [imgOffset, setImgOffset] = useState({ top: 0, left: 0 });
-  const [movementInterval, setMovementInterval] = useState(null);
+  const movementIntervalRef = useRef(null);
+  const directionRef = useRef(null);
+  const joystickIntervalRef = useRef(null);
+  const latestTwistRef = useRef({ linear: 0, angular: 0 });
+
+
+  
 
 const stopContinuousCommand = useCallback(() => {
-  setMovementInterval(prev => {
-    if (prev) clearInterval(prev);
-    return null;
-  });
-}, []);
+  if (movementIntervalRef.current) {
+    clearInterval(movementIntervalRef.current);
+    movementIntervalRef.current = null;
+  }
+
+  if (directionRef.current) {
+    sendCommand(robot_id, 'stop'); // tell robot to stop
+    directionRef.current = null;
+  }
+}, [robot_id, sendCommand]);
+
 
 useEffect(() => {
-  const handleGlobalMouseUp = () => {
+  const handlePointerUp = () => {
     stopContinuousCommand();
   };
 
-  document.addEventListener('mouseup', handleGlobalMouseUp);
+  window.addEventListener('pointerup', handlePointerUp);
 
   return () => {
-    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    window.removeEventListener('pointerup', handlePointerUp);
   };
 }, [stopContinuousCommand]);
-
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -78,18 +90,33 @@ useEffect(() => {
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
+useEffect(() => {
+  return () => {
+    stopContinuousCommand(); // Stop any ongoing movement when component unmounts
+  };
+}, [stopContinuousCommand]);
+
   const map_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png?ts=${mapTimestamp}`;
   const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml?ts=${mapTimestamp}`;
   const isInteractionBlocked = loading || !connected;
 
-  const startContinuousCommand = (direction) => {
-    if (movementInterval) return;  // Prevent multiple intervals
-    sendCommand(robot_id,  direction );  // Immediate send
-    const interval = setInterval(() => {
-      sendCommand(robot_id, direction);
-    }, 100);  // Still every 100ms, but smoother
-    setMovementInterval(interval);
-  };
+const startContinuousCommand = (direction) => {
+  // Clear any running interval
+  if (movementIntervalRef.current) {
+    clearInterval(movementIntervalRef.current);
+    movementIntervalRef.current = null;
+  }
+
+  directionRef.current = direction;
+  sendCommand(robot_id, direction); // send immediately
+
+  movementIntervalRef.current = setInterval(() => {
+    sendCommand(robot_id, direction);
+  }, 100);
+};
+
+
+
 
   useEffect(() => {
     if (pickingPoseRobotId !== robot_id) {
@@ -526,15 +553,48 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       gap: '2px',
       marginTop: '4px'
     }}>
+      {/* <div />
+      <button onPointerDown={() => startContinuousCommand('forward')}    disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬆️</button>
       <div />
-      <button onMouseDown={() => startContinuousCommand('forward')}  onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬆️</button>
+      <button onPointerDown={() => startContinuousCommand('left')}       disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬅️</button>
       <div />
-      <button onMouseDown={() => startContinuousCommand('left')}     onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬅️</button>
+      <button onPointerDown={() => startContinuousCommand('right')}      disabled={isInteractionBlocked} style={{ ...buttonStyle }}>➡️</button>
       <div />
-      <button onMouseDown={() => startContinuousCommand('right')}    onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>➡️</button>
-      <div />
-      <button onMouseDown={() => startContinuousCommand('backward')} onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬇️</button>
-      <div />
+      <button onPointerDown={() => startContinuousCommand('backward')}   disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬇️</button>
+      <div /> */}
+
+      <Joystick
+  size={100}
+  baseColor="#ccc"
+  stickColor="#888"
+  move={(e) => {
+    const maxSpeed = 0.5;
+    const linear = -(e.y * -maxSpeed).toFixed(2);
+    const angular = -(e.x * maxSpeed).toFixed(2);
+
+    // Update latest values in ref
+    latestTwistRef.current = { linear, angular };
+
+    // Start sending only once
+    if (!joystickIntervalRef.current) {
+      joystickIntervalRef.current = setInterval(() => {
+        const { linear, angular } = latestTwistRef.current;
+        sendCommand(robot_id, `twist:${linear},${angular}`);
+      }, 100); // 10 Hz
+    }
+  }}
+  stop={() => {
+    // Stop movement and interval
+    latestTwistRef.current = { linear: 0, angular: 0 };
+    sendCommand(robot_id, 'twist:0,0');
+
+    if (joystickIntervalRef.current) {
+      clearInterval(joystickIntervalRef.current);
+      joystickIntervalRef.current = null;
+    }
+  }}
+/>
+
     </div>
 
     {/* Action Buttons */}

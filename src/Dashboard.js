@@ -190,9 +190,9 @@ function Dashboard() {
       )}
       <br />
 
-      <pre style={{ textAlign: 'left', background: '#eee', padding: '10px', marginTop: '20px' }}>
+      {/* <pre style={{ textAlign: 'left', background: '#eee', padding: '10px', marginTop: '20px' }}>
         {JSON.stringify(robotStates, null, 2)}
-      </pre>
+      </pre> */}
 
       <button onClick={handleSignOut}>Sign Out</button>
     </div>

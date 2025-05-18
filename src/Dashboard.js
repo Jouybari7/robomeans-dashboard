@@ -1,7 +1,6 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { socket } from './socket';
 import { Auth } from 'aws-amplify';
-import Slider from './components/Slider';
 
 function Dashboard() {
   const [robots, setRobots] = useState([]);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Slider from '../components/Slider';
 import yaml from 'js-yaml'; // npm install js-yaml
 import RobotCamera from '../components/RobotCamera';
@@ -31,7 +31,8 @@ const actionButtonStyle = {
 
 export default function RobotCard({ robot, sharedProps }) {
   const { robot_id } = robot;
-  const { statuses, robotStates, missions, sendCommand, handleMissionChange, pickingPoseRobotId, setPickingPoseRobotId, connected } = sharedProps;
+  // const { statuses, robotStates, missions, sendCommand, handleMissionChange, pickingPoseRobotId, setPickingPoseRobotId, connected } = sharedProps;
+  const { robotStates, missions, sendCommand, handleMissionChange, pickingPoseRobotId, setPickingPoseRobotId, connected } = sharedProps;
   const isPickingPose = pickingPoseRobotId === robot_id;
   // const status = statuses[robot_id] || 'Disconnected';
   const robotState = robotStates[robot_id] || {};
@@ -47,18 +48,27 @@ export default function RobotCard({ robot, sharedProps }) {
   const mapResolution = 0.05; // meters per pixel
   // const API_URL = "https://api.robomeans.com";  // <--- Change if needed
   const [imgOffset, setImgOffset] = useState({ top: 0, left: 0 });
+  const [movementInterval, setMovementInterval] = useState(null);
 
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      stopContinuousCommand();
-    };
+const stopContinuousCommand = useCallback(() => {
+  setMovementInterval(prev => {
+    if (prev) clearInterval(prev);
+    return null;
+  });
+}, []);
 
-    document.addEventListener('mouseup', handleGlobalMouseUp);
+useEffect(() => {
+  const handleGlobalMouseUp = () => {
+    stopContinuousCommand();
+  };
 
-    return () => {
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, []);
+  document.addEventListener('mouseup', handleGlobalMouseUp);
+
+  return () => {
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+  };
+}, [stopContinuousCommand]);
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -72,8 +82,6 @@ export default function RobotCard({ robot, sharedProps }) {
   const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml?ts=${mapTimestamp}`;
   const isInteractionBlocked = loading || !connected;
 
-  const [movementInterval, setMovementInterval] = useState(null);
-
   const startContinuousCommand = (direction) => {
     if (movementInterval) return;  // Prevent multiple intervals
     sendCommand(robot_id,  direction );  // Immediate send
@@ -81,13 +89,6 @@ export default function RobotCard({ robot, sharedProps }) {
       sendCommand(robot_id, direction);
     }, 100);  // Still every 100ms, but smoother
     setMovementInterval(interval);
-  };
-
-  const stopContinuousCommand = () => {
-    if (movementInterval) {
-      clearInterval(movementInterval);
-      setMovementInterval(null);
-    }
   };
 
   useEffect(() => {
@@ -320,10 +321,14 @@ return (
     naturalWidth: e.target.naturalWidth,
     naturalHeight: e.target.naturalHeight
   });
+const containerRect = e.target.closest('div')?.getBoundingClientRect();
+if (containerRect) {
   setImgOffset({
-    top: rect.top - e.target.parentElement.getBoundingClientRect().top,
-    left: rect.left - e.target.parentElement.getBoundingClientRect().left
+    top: rect.top - containerRect.top,
+    left: rect.left - containerRect.left,
   });
+}
+
 }}
 
           onClick={handleMapClick}
@@ -522,11 +527,11 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       marginTop: '4px'
     }}>
       <div />
-      <button onMouseDown={() => startContinuousCommand('forward')} onMouseUp={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬆️</button>
+      <button onMouseDown={() => startContinuousCommand('forward')}  onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬆️</button>
       <div />
-      <button onMouseDown={() => startContinuousCommand('left')} onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬅️</button>
+      <button onMouseDown={() => startContinuousCommand('left')}     onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬅️</button>
       <div />
-      <button onMouseDown={() => startContinuousCommand('right')} onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>➡️</button>
+      <button onMouseDown={() => startContinuousCommand('right')}    onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>➡️</button>
       <div />
       <button onMouseDown={() => startContinuousCommand('backward')} onMouseUp={stopContinuousCommand} onMouseLeave={stopContinuousCommand} disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬇️</button>
       <div />

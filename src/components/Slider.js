@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-function Slider({ label, options, onChange, disabled, value }) {
+function Slider({ label, options, onChange, disabled, value, disabledOptions = [] }) {
   const [selectedIndex, setSelectedIndex] = useState(() => {
     const idx = options.findIndex(
       (opt) => typeof value === 'string' && opt.toLowerCase() === value.toLowerCase()
@@ -18,9 +18,22 @@ function Slider({ label, options, onChange, disabled, value }) {
   }, [value, options, selectedIndex]);
 
   const handleSelect = (index) => {
-    if (disabled || index === selectedIndex) return;
+    const opt = options[index];
+    const isIndividuallyDisabled = disabledOptions.includes(opt);
+    if (disabled || isIndividuallyDisabled || index === selectedIndex) return;
     setSelectedIndex(index);
-    onChange(options[index]);
+    onChange(opt);
+  };
+
+  // Tooltip messages for disabled buttons
+  const getTooltip = (opt) => {
+    if (opt === 'Navigate' && disabledOptions.includes('Navigate')) {
+      return 'Please dock the robot to switch to Navigate mode';
+    }
+    if (opt === 'Map' && disabledOptions.includes('Map')) {
+      return 'Please dock the robot to switch to Map mode';
+    }
+    return '';
   };
 
   return (
@@ -36,23 +49,27 @@ function Slider({ label, options, onChange, disabled, value }) {
       >
         {options.map((opt, index) => {
           const isSelected = selectedIndex === index;
+          const isIndividuallyDisabled = disabledOptions.includes(opt);
+          const isButtonDisabled = disabled || isIndividuallyDisabled;
+
           return (
             <button
               key={index}
               onClick={() => handleSelect(index)}
-              disabled={disabled}
+              disabled={isButtonDisabled}
+              title={getTooltip(opt)}
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
                 fontWeight: 'bold',
                 borderRadius: '6px',
                 border: 'none',
-                cursor: disabled ? 'not-allowed' : 'pointer',
+                cursor: isButtonDisabled ? 'not-allowed' : 'pointer',
                 backgroundColor: isSelected ? '#2196F3' : '#e0e0e0',
                 color: isSelected ? 'white' : '#333',
-                opacity: disabled ? 0.6 : 1,
+                opacity: isButtonDisabled ? 0.6 : 1,
                 transition: 'all 0.2s ease-in-out',
-                minWidth: '100px', // 👈 Ensures all buttons have equal width
+                minWidth: '100px',
                 textAlign: 'center',
               }}
             >

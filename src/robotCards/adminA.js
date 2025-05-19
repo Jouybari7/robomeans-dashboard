@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Slider from '../components/Slider';
 import yaml from 'js-yaml'; // npm install js-yaml
 import RobotCamera from '../components/RobotCamera';
-import { Joystick } from 'react-joystick-component';
+import JoystickControl from '../components/JoystickControl';
 
 const buttonStyle = {
   padding: '10px 15px',
@@ -51,11 +51,7 @@ export default function RobotCard({ robot, sharedProps }) {
   const [imgOffset, setImgOffset] = useState({ top: 0, left: 0 });
   const movementIntervalRef = useRef(null);
   const directionRef = useRef(null);
-  const joystickIntervalRef = useRef(null);
-  const latestTwistRef = useRef({ linear: 0, angular: 0 });
 
-
-  
 
 const stopContinuousCommand = useCallback(() => {
   if (movementIntervalRef.current) {
@@ -99,24 +95,6 @@ useEffect(() => {
   const map_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.png?ts=${mapTimestamp}`;
   const yaml_url = `https://robomeans-robot-maps.s3.ca-central-1.amazonaws.com/${robot_id}/map.yaml?ts=${mapTimestamp}`;
   const isInteractionBlocked = loading || !connected;
-
-const startContinuousCommand = (direction) => {
-  // Clear any running interval
-  if (movementIntervalRef.current) {
-    clearInterval(movementIntervalRef.current);
-    movementIntervalRef.current = null;
-  }
-
-  directionRef.current = direction;
-  sendCommand(robot_id, direction); // send immediately
-
-  movementIntervalRef.current = setInterval(() => {
-    sendCommand(robot_id, direction);
-  }, 100);
-};
-
-
-
 
   useEffect(() => {
     if (pickingPoseRobotId !== robot_id) {
@@ -268,7 +246,7 @@ return (
   {/* Top Section - Add and List Missions */}
   <div style={{ overflowY: 'auto' }}>
     <button
-      style={{ ...buttonStyle, fontSize: '12px', marginBottom: '6px' }}
+      style={{ ...buttonStyle, fontSize: '11px', marginBottom: '6px' }}
       onClick={() => {
         setPickingPoseRobotId(robot_id);
         setPoseStartPixel(null);
@@ -279,7 +257,7 @@ return (
       ➕ Add Mission
     </button>
 
-    <h4 style={{ fontSize: '12px', margin: '4px 0' }}>Missions</h4>
+    <h4 style={{ fontSize: '20px', margin: '4px 0' }}>Missions</h4>
     {missionState.length === 0 && <p style={{ fontSize: '10px' }}>No missions yet.</p>}
     <div style={{
       display: 'flex',
@@ -446,7 +424,7 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
               }}>
                 <defs>
                   <marker id={`arrowhead-mission-${index}`} markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                    <polygon points="0 0, 6 3, 0 6" fill="#ffa500" />
+                    <polygon points="0 0, 6 3, 0 6" fill="#3385FF" />
                   </marker>
                 </defs>
                 <line
@@ -454,7 +432,7 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
                   y1={posY+ imgOffset.top}
                   x2={endX+ imgOffset.left}
                   y2={endY+ imgOffset.top}
-                  stroke="#ffa500"
+                  stroke="#3385FF"
                   strokeWidth="2"
                   markerEnd={`url(#arrowhead-mission-${index})`}
                 />
@@ -476,7 +454,7 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
           }}>
             <defs>
               <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#00f" />
+                <polygon points="0 0, 10 3.5, 0 7" fill="#FF5733" />
               </marker>
             </defs>
             <line
@@ -484,7 +462,7 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
               y1={poseStartPixel.y+ imgOffset.top}
               x2={mousePixel.x+ imgOffset.left}
               y2={mousePixel.y+ imgOffset.top}
-              stroke="blue"
+              stroke="#FF5733"
               strokeWidth="2"
               markerEnd="url(#arrowhead)"
             />
@@ -507,14 +485,14 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
     
     {/* Robot Info */}
     <div>
-      <h3 style={{ fontSize: '20px', margin: '2px 0' }}>👨‍💼 Admin Robot: {robot_id}</h3>
+      <h3 style={{ fontSize: '20px', margin: '2px 0' }}> Admin Robot: {robot_id}</h3>
       <p style={{ fontSize: '20px', margin: '2px 0' }}>
         Status: <strong style={{ color: connection === 'connected' ? 'green' : 'red' }}>
           {connection === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
         </strong>
       </p>
       <div style={{ fontSize: '20px', marginBottom: '4px' }}>
-        🔋 Battery: <strong>{battery}%</strong>
+        Battery: <strong>{battery}%</strong>
         <div style={{
           height: '20px',
           width: '100%',
@@ -542,8 +520,8 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       value={robotState.mode_status ? robotState.mode_status.charAt(0).toUpperCase() + robotState.mode_status.slice(1) : 'Map'}
       onChange={(opt) => sendCommand(robot_id, opt.toLowerCase())}
       disabled={isInteractionBlocked}
+      disabledOptions={robotState.dock !== 1 ? ['Navigate','Map'] : []}
     />
-
     {/* D-Pad Controls */}
     <div style={{
       display: 'grid',
@@ -553,46 +531,11 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       gap: '2px',
       marginTop: '4px'
     }}>
-      {/* <div />
-      <button onPointerDown={() => startContinuousCommand('forward')}    disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬆️</button>
-      <div />
-      <button onPointerDown={() => startContinuousCommand('left')}       disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬅️</button>
-      <div />
-      <button onPointerDown={() => startContinuousCommand('right')}      disabled={isInteractionBlocked} style={{ ...buttonStyle }}>➡️</button>
-      <div />
-      <button onPointerDown={() => startContinuousCommand('backward')}   disabled={isInteractionBlocked} style={{ ...buttonStyle }}>⬇️</button>
-      <div /> */}
 
-      <Joystick
-  size={100}
-  baseColor="#ccc"
-  stickColor="#888"
-  move={(e) => {
-    const maxSpeed = 0.5;
-    const linear = -(e.y * -maxSpeed).toFixed(2);
-    const angular = -(e.x * maxSpeed).toFixed(2);
-
-    // Update latest values in ref
-    latestTwistRef.current = { linear, angular };
-
-    // Start sending only once
-    if (!joystickIntervalRef.current) {
-      joystickIntervalRef.current = setInterval(() => {
-        const { linear, angular } = latestTwistRef.current;
-        sendCommand(robot_id, `twist:${linear},${angular}`);
-      }, 100); // 10 Hz
-    }
-  }}
-  stop={() => {
-    // Stop movement and interval
-    latestTwistRef.current = { linear: 0, angular: 0 };
-    sendCommand(robot_id, 'twist:0,0');
-
-    if (joystickIntervalRef.current) {
-      clearInterval(joystickIntervalRef.current);
-      joystickIntervalRef.current = null;
-    }
-  }}
+<JoystickControl
+  robot_id={robot_id}
+  sendCommand={sendCommand}
+  disabled={isInteractionBlocked}
 />
 
     </div>

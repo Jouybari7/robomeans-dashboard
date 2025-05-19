@@ -597,11 +597,11 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       <button
         style={{
           ...actionButtonStyle,
-          opacity: loading || robotState.mode_status?.toLowerCase() === 'map' ? 0.5 : 1,
+          opacity: loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock == 1 ? 0.5 : 1,
           cursor: loading || robotState.mode_status?.toLowerCase() === 'map' ? 'not-allowed' : 'pointer',
         }}
         onClick={() => sendCommand(robot_id, 'Dock')}
-        disabled={loading || robotState.mode_status?.toLowerCase() === 'map'}
+        disabled={loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock == 1}
         title={robotState.mode_status?.toLowerCase() === 'map' ? 'Only in Navigate mode' : ''}
       >
         Dock
@@ -617,8 +617,13 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
   borderTop: '2px solid #ccc',
   textAlign: 'center',
 }}>
-  <strong>Status:</strong> {robotState.mode_status || 'N/A'}
+  <strong>
+    {connection === 'connected'
+      ? (robotState.message || 'No message')
+      : 'Please connect the robot'}
+  </strong>
 </div>
+
   </div>
 </div>
     </div>

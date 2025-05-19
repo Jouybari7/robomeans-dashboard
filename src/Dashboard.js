@@ -132,21 +132,27 @@ function Dashboard() {
     return () => socket.disconnect();
   }, []);
 
-  const sendCommand = (robotId, command) => {
-    socket.emit('command_to_robot', {
-      robot_id: robotId,
-      command,
-    });
+const sendCommand = (robotId, command) => {
+  socket.emit('command_to_robot', {
+    robot_id: robotId,
+    command,
+  });
 
-    setRobotStates(prev => ({
-      ...prev,
-      [robotId]: {
-        ...prev[robotId],
-        loading: true,
-        commandInProgress: command,
-      },
-    }));
-  };
+  // ✅ Skip state updates for high-frequency joystick commands
+  if (command.startsWith('twist:') || command === 'stop') {
+    return;
+  }
+
+  // ✅ Only update UI state for major commands
+  setRobotStates(prev => ({
+    ...prev,
+    [robotId]: {
+      ...prev[robotId],
+      loading: true,
+      commandInProgress: command,
+    },
+  }));
+};
 
   const handleMissionChange = async (robotId, updatedMissions) => {
     setMissions(prev => ({

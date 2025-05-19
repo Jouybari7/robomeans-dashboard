@@ -139,7 +139,7 @@ const sendCommand = (robotId, command) => {
   });
 
   // ✅ Skip state updates for high-frequency joystick commands
-  if (command.startsWith('twist:') || command === 'stop') {
+  if (typeof command === 'string' && (command.startsWith('twist:') || command === 'stop')) {
     return;
   }
 
@@ -149,10 +149,11 @@ const sendCommand = (robotId, command) => {
     [robotId]: {
       ...prev[robotId],
       loading: true,
-      commandInProgress: command,
+      commandInProgress: typeof command === 'string' ? command : command.command,
     },
   }));
 };
+
 
   const handleMissionChange = async (robotId, updatedMissions) => {
     setMissions(prev => ({

@@ -296,7 +296,14 @@ return (
         cursor: loading || robotState.mode_status?.toLowerCase() !== 'navigate' ? 'not-allowed' : 'pointer',
         width: '100%',
       }}
-      onClick={() => sendCommand(robot_id, 'Deploy')}
+      onClick={() => {
+              const selectedMissions = missionState.filter((m) => m.selected);
+              if (selectedMissions.length === 0) {
+                alert('Please select at least one mission to deploy.');
+                return;
+              }
+              sendCommand(robot_id, { command: 'deploy', missions: selectedMissions.map((m) => ({ name: m.name, pose: m.pose })) });
+            }}       
       disabled={loading || robotState.mode_status?.toLowerCase() !== 'navigate'}
       title={robotState.mode_status?.toLowerCase() !== 'navigate' ? 'Only in Navigate mode' : ''}
     >
@@ -597,11 +604,11 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
       <button
         style={{
           ...actionButtonStyle,
-          opacity: loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock == 1 ? 0.5 : 1,
+          opacity: loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock === 1 ? 0.5 : 1,
           cursor: loading || robotState.mode_status?.toLowerCase() === 'map' ? 'not-allowed' : 'pointer',
         }}
         onClick={() => sendCommand(robot_id, 'Dock')}
-        disabled={loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock == 1}
+        disabled={loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock === 1}
         title={robotState.mode_status?.toLowerCase() === 'map' ? 'Only in Navigate mode' : ''}
       >
         Dock

@@ -521,28 +521,34 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
     {/* Camera */}
     <RobotCamera robotId={robot_id} />
 
+    {/* Activation Slider */}
+<Slider
+  options={['Activate', 'Deactivate']}
+  value={robotState.activation === 1 ? 'Activate' : 'Deactivate'}
+  onChange={(opt) => sendCommand(robot_id, opt.toLowerCase())}
+/>
+
     {/* Mode Slider */}
     <Slider
       options={['Map', 'Drive', 'Navigate']}
       value={robotState.mode_status ? robotState.mode_status.charAt(0).toUpperCase() + robotState.mode_status.slice(1) : 'Map'}
       onChange={(opt) => sendCommand(robot_id, opt.toLowerCase())}
-      disabled={isInteractionBlocked}
+      disabled={isInteractionBlocked || robotStates[robot_id]?.activation == 0}
       disabledOptions={robotState.dock !== 1 ? ['Navigate','Map'] : []}
     />
-    {/* D-Pad Controls */}
+
+    {/* Joystick Controls */}
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(3, 30px)',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: '2px',
-      marginTop: '4px'
     }}>
 
 <JoystickControl
   robot_id={robot_id}
   sendCommand={sendCommand}
-  disabled={isInteractionBlocked}
+  disabled={isInteractionBlocked ||  robotStates[robot_id]?.activation == 0}
 />
 
     </div>
@@ -588,7 +594,7 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
         Cancel
       </button>
 
-      <button
+      {/* <button
         style={{
           ...actionButtonStyle,
           opacity: loading || robotState.mode_status?.toLowerCase() !== 'navigate' ? 0.5 : 1,
@@ -599,32 +605,42 @@ left: `${scaledOriginPixels.x + imgOffset.left}px`,
         title={robotState.mode_status?.toLowerCase() !== 'navigate' ? 'Only in Navigate mode' : ''}
       >
         Home
-      </button>
+      </button> */}
 
       <button
         style={{
           ...actionButtonStyle,
-          opacity: loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock === 1 ? 0.5 : 1,
-          cursor: loading || robotState.mode_status?.toLowerCase() === 'map' ? 'not-allowed' : 'pointer',
+          opacity: loading  || robotState.dock === 1 ||  robotState.activation === 0 ||  robotState.mission === 1 ? 0.5 : 1,
+          // cursor: loading || robotState.mode_status?.toLowerCase() === 'map' ? 'not-allowed' : 'pointer',
         }}
         onClick={() => sendCommand(robot_id, 'Dock')}
-        disabled={loading || robotState.mode_status?.toLowerCase() === 'map' || robotState.dock === 1}
-        title={robotState.mode_status?.toLowerCase() === 'map' ? 'Only in Navigate mode' : ''}
+        disabled={loading || robotState.dock === 1 ||  robotState.activation === 0 ||  robotState.mission === 1}
+        // title={robotState.mode_status?.toLowerCase() === 'map' ? 'Only in Navigate mode' : ''}
       >
         Dock
       </button>
+
+    
+{/* <span style={{ marginLeft: '10px', fontWeight: 'bold' }}>
+  {robotStates[robot_id]?.robot_armed === 1 ? 'ON' : 'OFF'}
+</span> */}
+
+
     </div>
 
     {/* Message Box */}
 <div style={{
-  fontSize: '16px',
-  marginTop: '10px',
+  fontSize: '20px',
   padding: '6px 12px',
   backgroundColor: '#f0f0f0',
-  borderTop: '2px solid #ccc',
+  borderTop: '3px solid #ccc',
   textAlign: 'center',
 }}>
-  <strong>
+  <strong style={{ 
+    color: 'red', 
+    display: 'inline-block', 
+    marginTop: '12px' // moves only the text down
+  }}>
     {connection === 'connected'
       ? (robotState.message || 'No message')
       : 'Please connect the robot'}

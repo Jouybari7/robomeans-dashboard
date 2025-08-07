@@ -177,9 +177,9 @@ async def robot_image(sid, data):
         print("❌ Missing robot_id or image_base64 in robot_image event")
         return
 
-    print(f"🖼️  Received image from {robot_id} (SID: {sid}) - size: {len(image_base64)} bytes")
-    print(f"🧠 robot_ui_subscribers = {robot_ui_subscribers}")
-    print(f"🔍 Emitting image from {robot_id} to: {robot_ui_subscribers.get(robot_id, set())}")
+    # print(f"🖼️  Received image from {robot_id} (SID: {sid}) - size: {len(image_base64)} bytes")
+    # print(f"🧠 robot_ui_subscribers = {robot_ui_subscribers}")
+    # print(f"🔍 Emitting image from {robot_id} to: {robot_ui_subscribers.get(robot_id, set())}")
     
 
     event_name = f"robot_image_{robot_id}"

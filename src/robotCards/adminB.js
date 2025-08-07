@@ -138,7 +138,7 @@ export default function RobotCard({ robot }) {
     const eventName = `robot_image_${robot_id}`;
     const handler = (data) => {
       if (data?.robot_id === robot_id) {
-        console.log(`👁️ ${robot_id} image updated:`, data.image_base64?.slice(0, 30));
+        // console.log(`👁️ ${robot_id} image updated:`, data.image_base64?.slice(0, 30));
         setImageBase64(data.image_base64);
       }
     };
@@ -155,7 +155,7 @@ export default function RobotCard({ robot }) {
 useEffect(() => {
   const eventName = `robot_image_${robot.robot_id}`;
   const handler = (data) => {
-    console.log(`👁️ ${robot.robot_id} image updated:`, data.image_base64?.slice(0, 30));
+    // console.log(`👁️ ${robot.robot_id} image updated:`, data.image_base64?.slice(0, 30));
     setImageBase64(data.image_base64);
   };
 

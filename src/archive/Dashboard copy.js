@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { socket } from './socket';
+import { socket } from '../socket';
 import { Auth } from 'aws-amplify';
 
 function Dashboard() {

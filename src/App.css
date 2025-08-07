@@ -42,3 +42,10 @@
     transform: rotate(360deg);
   }
 }
+
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 6px #00bcd4;
+  transition: all 0.2s ease-in-out;
+}

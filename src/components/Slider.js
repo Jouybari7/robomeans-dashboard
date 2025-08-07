@@ -37,10 +37,11 @@ function Slider({ label, options, onChange, disabled, value, disabledOptions = [
   };
 
   return (
-    <div style={{ margin: '20px 0' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>{label}</div>
+    <div style={{ margin: '3px 0' }}>
+      <div style={{ fontFamily: 'inherit', color: 'inherit',fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>{label}</div>
       <div
         style={{
+          fontFamily: 'inherit', color: 'inherit',
           display: 'flex',
           justifyContent: 'center',
           gap: '10px',
@@ -59,14 +60,16 @@ function Slider({ label, options, onChange, disabled, value, disabledOptions = [
               disabled={isButtonDisabled}
               title={getTooltip(opt)}
               style={{
+                fontFamily: 'inherit', color: 'inherit',
                 padding: '10px 20px',
                 fontSize: '14px',
                 fontWeight: 'bold',
                 borderRadius: '6px',
                 border: 'none',
                 cursor: isButtonDisabled ? 'not-allowed' : 'pointer',
-                backgroundColor: isSelected ? '#2196F3' : '#e0e0e0',
-                color: isSelected ? 'white' : '#333',
+backgroundColor: isSelected ? '#00BCD4' : '#37474F',
+color: isSelected ? '#000' : '#ccc',
+fontWeight: isSelected ? 'bold' : 'normal',
                 opacity: isButtonDisabled ? 0.6 : 1,
                 transition: 'all 0.2s ease-in-out',
                 minWidth: '100px',

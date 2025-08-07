@@ -43,6 +43,7 @@
 import React from 'react';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import Dashboard from './Dashboard';
+import './App.css';
 
 function App({ signOut }) {
   return <Dashboard signOut={signOut} />;

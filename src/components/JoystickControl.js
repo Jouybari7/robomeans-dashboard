@@ -36,7 +36,6 @@ return (
     style={{
       display: 'flex',
       justifyContent: 'flex-start', // Align to the left
-      marginTop: '10px',
       pointerEvents: disabled ? 'none' : 'auto',
       opacity: disabled ? 0.5 : 1,
     }}
@@ -46,23 +45,18 @@ return (
         width: '100px',
         height: '100px',
         aspectRatio: '1 / 1',
-        // background: 'radial-gradient(circle, #777 0%, #e0e0e0 100%)',
         borderRadius: '50%',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        // boxShadow:
-        //   'inset 2px 2px 6px rgba(255,255,255,0.1), inset -2px -2px 6px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.0)',
-        // border: '2px solid #999',
         overflow: 'hidden',
         flexShrink: 0,
-        marginLeft: '-3px' // Optional spacing from left edge
       }}
     >
       <Joystick
         size={100}
-        baseColor="#e0e0e0"
-        stickColor="#1E90FF"
+        baseColor="#37474F"
+        stickColor="#00BCD4"
         move={handleMove}
         stop={handleStop}
         stickShape="circle"

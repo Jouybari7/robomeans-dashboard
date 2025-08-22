@@ -809,6 +809,7 @@ backgroundColor: '#263238',
 disabled={isInteractionBlocked || robotState.activation == 0 || connection !== 'connected'}
 
   disabledOptions={robotState.dock !== 1 ? ['Navigate', 'Map'] : []}
+  
 />
 
 {/* Joystick centered */}

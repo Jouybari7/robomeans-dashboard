@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rectangle Adjuster</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; text-align: center; background: #222; color: white; }
+        #canvas-container { width: 100vw; height: 60vh; display: flex; justify-content: center; align-items: center; }
+        .controls { padding: 10px; background: #333; border-radius: 10px; display: inline-block; margin-top: 10px; }
+        .slider { width: 80%; }
+        label { display: block; margin-top: 10px; }
+        select.slider {
+        width: 80%;
+        padding: 5px;
+        margin-top: 10px;
+        background: #444;
+        color: white;
+        border: 1px solid #666;
+        border-radius: 5px;
+    }
+    </style>
+</head>
+<body>
+
+    <h2>Robot Viewer</h2>
+    <div id="canvas-container"></div>
+
+    <div class="controls">
+        <label>Width: <span id="width-value">50</span></label>
+        <input type="range" id="width" class="slider" min="10" max="300" step="10" value="50">
+
+        <label>Height: <span id="height-value">10</span></label>
+        <input type="range" id="height" class="slider" min="10" max="300" step="10" value="10">
+
+        <label>Depth: <span id="depth-value">30</span></label>
+        <input type="range" id="depth" class="slider" min="10" max="300" step="10" value="30">
+        
+        <label>Configuration:</label>
+        <select id="configuration" class="slider">
+            <option value="differential">Differential</option>
+            <option value="skid">Skid</option>
+        </select>
+    </div>
+
+    <script>
+        let scene, camera, renderer, cube;
+        let wheel1, wheel2, wheel3, wheel4;
+        let controls;
+
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xCFDBE5);
+            const axesHelper = new THREE.AxesHelper(100); // Size 100 units
+            // scene.add(axesHelper);
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
+            camera.position.set(50, 50, 50);
+            camera.lookAt(0, 0, 0);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Add orbit controls after renderer setup
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Optional, but makes rotation smoother
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 50;   // Minimum zoom distance
+            controls.maxDistance = 500;  // Maximum zoom distance
+            controls.maxPolarAngle = Math.PI / 2; // Limit vertical rotation if needed
+            
+            // Create main cube
+            let geometry = new THREE.BoxGeometry(50, 10, 30);
+            let material = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5, roughness: 0.4 });
+            cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+
+            // Create wheels using STL
+            const loader = new THREE.STLLoader();
+            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.3 });
+            
+            loader.load(
+                'wheel.stl', // Make sure to add your wheel.stl file in the same directory
+                function (geometry) {
+                    geometry.scale(0.1, 0.1, 0.1); // Adjust scale as needed
+
+                    wheel1 = new THREE.Mesh(geometry.clone(), wheelMaterial);
+                    wheel2 = new THREE.Mesh(geometry.clone(), wheelMaterial);
+                    wheel3 = new THREE.Mesh(geometry.clone(), wheelMaterial);
+                    wheel4 = new THREE.Mesh(geometry.clone(), wheelMaterial);
+
+
+
+                    // Initial wheel positions
+                    wheel1.position.set(15.5, -14.5, 15);
+                    wheel2.position.set(-34.5, -14.5, 15);
+                    wheel3.position.set(15.5, 4.5, -15);
+                    wheel4.position.set(-34.5, 4.5, -15);
+
+                    // Set individual wheel rotations
+                    wheel1.rotation.set(0 , 0, 0); 
+                    wheel2.rotation.set(0, 0, 0);
+                    wheel3.rotation.set(3.14 , 0, 0);
+                    wheel4.rotation.set(3.14  , 0, 0 );
+                                        // Add wheels to cube
+                    cube.add(wheel1);
+                    cube.add(wheel2);
+                    cube.add(wheel3);
+                    cube.add(wheel4);
+                    updateConfiguration();
+                },
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                function (error) {
+                    console.error('Error loading STL:', error);
+                }
+                
+            );
+
+            // Add lighting
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5).normalize();
+            scene.add(light);
+
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.y += 0.01;
+            controls.update(); // Add this line to update controls
+
+            renderer.render(scene, camera);
+        }
+
+        function updateSize() {
+            let width = parseFloat(document.getElementById('width').value);
+            let height = parseFloat(document.getElementById('height').value);
+            let depth = parseFloat(document.getElementById('depth').value);
+
+            document.getElementById('width-value').innerText = width;
+            document.getElementById('height-value').innerText = height;
+            document.getElementById('depth-value').innerText = depth;
+
+            cube.geometry.dispose();
+            cube.geometry = new THREE.BoxGeometry(width, height, depth);
+
+            // Update wheel positions only if wheels are loaded
+            if (wheel1 && wheel2 && wheel3 && wheel4) {
+                wheel1.position.set(width/2-9.5 ,-height/2-9.5, depth/2);
+                wheel2.position.set(-width/2-9.5 ,-height/2-9.5, depth/2);
+                wheel3.position.set(width/2-9.5 , 9.5-height/2,-depth/2);
+                wheel4.position.set(-width/2-9.5 , 9.5-height/2,-depth/2);
+            }
+        }
+
+
+        function updateConfiguration() {
+            const config = document.getElementById('configuration').value;
+            if (wheel1 && wheel2 && wheel3 && wheel4) {
+                if (config === 'differential') {
+                    // Show only front wheels for differential drive
+                    wheel1.visible = true;
+                    wheel2.visible = false;
+                    wheel3.visible = true;
+                    wheel4.visible = false;
+                } else if (config === 'skid') {
+                    // Show all wheels for skid steer
+                    wheel1.visible = true;
+                    wheel2.visible = true;
+                    wheel3.visible = true;
+                    wheel4.visible = true;
+                }
+            }
+        }
+
+
+        document.getElementById('width').addEventListener('input', updateSize);
+        document.getElementById('height').addEventListener('input', updateSize);
+        document.getElementById('depth').addEventListener('input', updateSize);
+        document.getElementById('configuration').addEventListener('change', updateConfiguration);
+
+
+        window.onload = init;
+    </script>
+
+</body>
+</html>

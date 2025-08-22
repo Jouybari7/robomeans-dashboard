@@ -95,25 +95,46 @@ function Dashboard() {
         }}>
           Welcome to Robomeans Dashboard
         </div>
-        <button
-          onClick={handleSignOut}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'transparent',
-            border: '2px solid white',
-            borderRadius: '4px',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'all 0.3s ease',
-            ':hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
-        >
-          Sign Out
-        </button>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button
+            onClick={() => window.open('http://10.42.0.1/', '_blank')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: 'rgba(0, 188, 212, 0.2)',
+              border: '2px solid #00bcd4',
+              borderRadius: '4px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              ':hover': {
+                backgroundColor: 'rgba(0, 188, 212, 0.3)'
+              }
+            }}
+          >
+            Local Robot Interface
+          </button>
+          <button
+            onClick={handleSignOut}
+            style={{
+              padding: '8px 16px',
+backgroundColor: 'rgba(0, 188, 212, 0.2)',
+border: '2px solid #00bcd4',  // Teal/cyan colored border
+              borderRadius: '4px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.3s ease',
+              ':hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
 
       {robots.length === 0 ? (
